@@ -1,0 +1,18 @@
+#General computes and variable desfinition
+###################################################
+#Counting Particles
+###################################################
+
+variable        delta_x equal 0.2
+
+
+compute         cc1 all chunk/atom bin/1d x center ${delta_x} units box region rTop
+compute         cc2 gSolv chunk/atom bin/1d x center ${delta_x} units box region rTop
+compute         cc3 gSolu chunk/atom bin/1d x center ${delta_x} units box region rTop
+
+fix             call all ave/chunk 10 100 1000 cc1 density/mass ave running overwrite file properties.dat
+
+fix             csolv gSolv ave/chunk 10 100 1000 cc2 density/mass ave running overwrite file Fproperties.dat
+
+fix             cSolu gSolu ave/chunk 10 100 1000 cc3 density/mass ave running overwrite file Sproperties.dat
+

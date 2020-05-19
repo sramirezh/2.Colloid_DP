@@ -1,0 +1,7 @@
+compute cc1 all chunk/atom bin/sphere ${lhalfx} ${lhalfy} ${lhalfz} 0.0 10.0 200
+compute cc2 all chunk/atom bin/sphere ${lhalfx} ${lhalfy} ${lhalfz} 0.0 10.0 200
+compute cc3 all chunk/atom bin/sphere ${lhalfx} ${lhalfy} ${lhalfz} 0.0 10.0 200
+
+fix conc1 gSol ave/chunk 10 100 1000 cc1 density/number file prof_t.dat ave running overwrite
+fix conc2 gSolu ave/chunk 10 100 1000 cc2 density/number file prof_u.dat ave running overwrite
+fix conc3 gSolv ave/chunk 10 100 1000 cc3 density/number file prof_v.dat ave running overwrite

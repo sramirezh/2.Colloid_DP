@@ -1,0 +1,44 @@
+#General computes and variable definition
+
+#####################################################
+#Variables to set the box
+####################################################
+
+variable lxbox equal lx
+variable lybox equal ly
+variable lzbox equal lz
+
+###################################################
+# computing velocities
+###################################################
+
+
+#Counting Particles
+
+variable cSolu equal count(gSolu)
+variable cSolv equal count(gSolv)
+variable cCol equal count(gMon)
+#Bulk region
+
+variable cBSolu equal count(gSolu,rBulk)
+variable cBSolv equal count(gSolv,rBulk)
+variable cBSol equal count(gSol,rBulk) 
+
+variable vxB_Solv equal vcm(gSolv,x,rBulk)
+variable vxB_Solu equal vcm(gSolu,x,rBulk)
+variable vxB_Sol equal vcm(gSol,x,rBulk)
+
+variable vx_Sol equal vcm(gSol,x)
+
+variable vx_Col equal vcm(gMon,x)
+
+variable vx_relative equal v_vx_Col-v_vx_Sol
+
+compute comCol gMon com #center of mass of the colloid
+
+#####################################################
+#Forces per species 
+#####################################################
+
+variable fSol equal -${forcm}*${cCol}/(${cSolu}+${cSolv})
+

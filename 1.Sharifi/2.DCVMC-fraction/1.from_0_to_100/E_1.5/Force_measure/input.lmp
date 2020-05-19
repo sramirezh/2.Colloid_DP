@@ -1,0 +1,133 @@
+
+variable        Lx equal 30 #In lattice units 
+variable 	Ly equal 12
+variable        Lz equal 18
+
+variable        nonzero equal 1.0e-8
+
+variable 	lambda equal 1
+variable 	myThermo equal 1e2
+variable 	myDump equal 1e4
+variable 	Temp equal 1.0 
+
+
+
+variable        RColloid equal 3.23 
+variable 	t_rho_bulk equal 0.75 
+variable 	sol_frac equal 0.5 #solute fraction in the bulk
+variable	frac equal 0.5
+
+variable        Loop equal 1e6
+variable        myloop loop ${Loop} 
+variable        myUpdateDyn equal 10 #THIS IS THE MOST IMPORTANT PARAMETER as atom/swap does not update
+variable        myStepsEach equal 20 #Every these steps there is a correction of the sources
+
+
+timestep        0.05
+
+boundary 	p p p
+
+units 		lj
+atom_style      atomic
+neighbor        0.5 bin
+neigh_modify    every 1 delay 10 check yes
+
+
+lattice         fcc 0.8
+
+region          box block 0 ${Lx} 0 ${Ly} 0 ${Lz}
+create_box      3 box
+
+
+include 	in.geom
+include		in.interaction
+#include 	in.flux
+
+
+# Defining the colloid
+create_atoms    3 region rColloid
+group 		gMon type 3
+
+
+fix             fx_Col gMon store/force
+
+fix             keepColloid gMon setforce 0 0 0
+
+lattice        fcc ${t_rho_bulk}
+create_atoms   1 region rCollcomp
+
+group 		gSolv type 1
+
+set 	       	group gSolv type/fraction 2 ${sol_frac} 12393
+
+group 		gSolu type 2
+
+group 		gSol union gSolu gSolv
+
+minimize 	0.0 1.0e-8 1000 100000
+
+
+fix             ensemble all nvt temp 1.0 1.0 1.0 
+
+#dump            dump_all all custom 10000 all.atom id type x y z ix iy iz vx
+run 		10000
+
+
+group 		dgRes1 dynamic all region rRes1 every ${myUpdateDyn}
+group           dgRes2 dynamic all region rRes2 every ${myUpdateDyn}
+
+
+variable	nSolv	equal count(gSolv)
+variable 	nSolu	equal count(gSolu)
+variable 	rhoSolv equal v_nSolv/vol
+variable 	rhoSolu equal v_nSolu/vol
+
+
+include 	in.computations
+
+
+#Checking that the temperatures are right
+compute 	TSolv gSolv temp
+compute 	TSolu gSolu temp
+compute_modify  TSolv dynamic yes
+compute_modify 	TSolu dynamic yes
+
+
+# reducing the force
+compute         reduce_fx gMon reduce sum f_fx_Col[1]
+
+
+fix             cal1 all ave/time ${myThermo} 1 ${myThermo} v_vxB_sol v_vx_sol v_rhoBSol c_reduce_fx file "./vdata_eq.dat"
+
+
+thermo          1000
+
+ 
+thermo_style    custom step temp c_TSolv c_TSolu press v_nSolv v_nSolu density v_rhoBSol c_reduce_fx
+
+compute_modify 	thermo_temp dynamic yes
+
+
+# SEMI GRAND CANONICAL
+
+label sgcm
+run ${myStepsEach}
+
+set group dgRes1 type/fraction 1 1 2014
+set group dgRes2 type/fraction 2 1 1233
+
+next myloop
+
+jump SELF sgcm
+
+
+
+
+
+
+#Saving the last configurations
+
+print 		"Now I will save the configurations" 
+
+write_data      equil.dat nocoeff
+run             1

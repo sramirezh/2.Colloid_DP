@@ -1,0 +1,13 @@
+#General computes and variable desfinition
+###################################################
+#Counting Particles
+###################################################
+
+variable        delta_x equal 0.2
+
+
+variable        lattice_spacing equal 1.70998
+variable        bulk_volume equal 2*(${lattice_spacing}^3)*(${Lx}*${Ly}*${lBulk})
+
+variable        rhoBSol equal count(all,rBulk)/${bulk_volume}
+

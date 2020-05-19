@@ -1,0 +1,54 @@
+#General computes and variable definition
+
+#####################################################
+#Variables to set the box
+####################################################
+
+variable lxbox equal lx
+variable lybox equal ly
+variable lzbox equal lz
+
+###################################################
+# computing velocities
+###################################################
+
+
+#Counting Particles
+
+variable cSolu equal count(gSolu)
+variable cSolv equal count(gSolv)
+variable cCol equal count(gMon)
+#Bulk region
+
+variable cBSolu equal count(gSolu,rBulk)
+variable cBSolv equal count(gSolv,rBulk)
+variable cBSol equal count(gSol,rBulk) 
+
+variable vxB_Solv equal vcm(gSolv,x,rBulk)
+variable vxB_Solu equal vcm(gSolu,x,rBulk)
+variable vxB_Sol equal vcm(gSol,x,rBulk)
+
+variable vx_Sol equal vcm(gSol,x)
+
+variable vx_Col equal vcm(gMon,x)
+
+variable vx_relative equal v_vx_Col-v_vx_Sol
+
+compute comCol gMon com #center of mass of the colloid
+
+#####################################################
+#Forces per species 
+#####################################################
+
+#Ratios 
+
+variable cRatio equal v_cBSolu/v_cBSolv 
+variable nBSolu equal v_cBSolu/${bulk_volume}  #Solute concentration in the bulk
+variable nBSol equal v_cBSol/${bulk_volume}
+variable frac_bulk equal v_cBSolu/v_cBSol 
+
+#Forces
+variable forc1 equal -${forc0}*${cRatio}
+variable Fsol equal ${cSolu}*${forc0}+${cSolv}*${forc1} #Sum of foces over solution particles
+variable Fbulk equal v_cBSolu*${forc0}+v_cBSolv*${forc1} #force balance in the bulk
+variable forcp equal -${Fsol}/${cCol}

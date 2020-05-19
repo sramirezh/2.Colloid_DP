@@ -1,0 +1,19 @@
+# set lj potentials of each particle species
+
+variable 	epsilonlj equal 1
+variable 	sigmalj equal 1
+variable 	cij equal 3.0
+variable 	epsilon equal ${epsilonlj}*${cij}^2
+variable 	sigma equal ${sigmalj}*${cij}^(-1/6)
+
+pair_style	lj/cut 2.5 
+
+pair_coeff      * * ${epsilonlj} ${sigmalj}
+pair_coeff 	2 3 ${epsilon} ${sigma} 4.0
+neigh_modify    exclude type 3 3 
+
+mass 		* 1.0
+
+pair_modify	mix arithmetic
+pair_modify 	shift yes
+pair_modify     tail no

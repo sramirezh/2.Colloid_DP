@@ -1,0 +1,22 @@
+#General computes and variable desfinition
+###################################################
+#Counting Particles
+###################################################
+
+variable        delta_x equal 0.2
+
+variable 	vxB_solv equal vcm(gSolv,x,rBulk)
+variable        vxB_solu equal vcm(gSolu,x,rBulk)
+variable 	vxB_sol equal vcm(all,x,rBulk)
+
+variable 	vx_solv equal vcm(gSolv,x)
+variable        vx_solu equal vcm(gSolu,x)
+variable        vx_sol equal vcm(all,x)
+
+
+variable        lattice_spacing equal 1.70998
+variable        bulk_volume equal 2*(${lattice_spacing}^3)*(${Lx}*${Ly}*${lBulk})
+
+variable        rhoBSol equal count(all,rBulk)/${bulk_volume}
+
+

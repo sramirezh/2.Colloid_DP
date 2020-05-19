@@ -1,0 +1,101 @@
+
+# Geometry variables
+variable        Lx equal 12 #In lattice units 
+variable 	Ly equal 12
+variable        Lz equal 18
+
+
+# Run variables 
+variable	myTraj equal 1e2
+variable        myThermo equal 1e2
+variable 	myDump equal 1e4
+variable        myUpdateDyn equal 10 #THIS IS THE MOST IMPORTANT PARAMETER as atom/swap does not update
+variable        myX_relax equal 1e4
+
+variable        myEquil equal 1e5
+variable 	myProd equal 1e4
+
+
+
+# Systemp Parameters
+variable 	RColloid equal 3.23
+variable 	Temp equal 1.0 
+variable 	t_rho_bulk equal 0.72 
+variable 	sol_frac equal 0.5 #solute fraction in the bulk
+variable        nonzero equal 1.0e-8
+variable 	lattice_spacing equal 1.70998
+
+timestep        0.05
+
+boundary 	p p p
+
+units 		lj
+atom_style      atomic
+neighbor        0.5 bin
+neigh_modify    every 1 delay 10 check yes
+
+
+lattice         fcc 0.8
+
+region          box block 0 ${Lx} 0 ${Ly} 0 ${Lz}
+create_box      3 box
+
+
+
+
+include 	in.geom
+include		../in.interaction
+#include 	in.flux
+
+
+# Defining the colloid
+create_atoms    3 single ${lhalfx} ${lhalfy} ${lhalfz} units box
+group 		gMon type 3
+fix             keepColloid gMon setforce 0 0 0
+
+lattice        fcc ${t_rho_bulk}
+create_atoms   1 region rCollcomp
+
+group 		gSolv type 1
+
+set 	       	group gSolv type/fraction 2 ${sol_frac} 12393
+
+group 		gSolu type 2
+
+group 		gSol union gSolu gSolv
+
+minimize 	0.0 1.0e-8 1000 100000
+
+
+fix             ensemble all nvt temp 1.0 1.0 1.0 
+
+
+dump            dump_all all custom ${myTraj} all.atom id type x y z ix iy iz 
+
+include 	in.dyngroup
+include 	in.computations
+
+
+fix             cal1 all ave/time ${myThermo} 1 ${myThermo} v_dcSolu v_dcSolv v_nBSolu v_nBSolv v_nBSol v_frac_bulk  file "./vdata_eq.dat"
+
+
+run 		${myEquil}
+
+
+
+
+
+# Semi-Grand canonical
+fix             mc_relax all atom/swap ${myUpdateDyn} ${myX_relax}  13412 1.0 semi-grand yes region rnoColloid types 1 2 mu 0 0  
+# 
+
+
+run		${myProd}
+
+
+#Saving the last configurations
+
+print 		"Now I will save the configurations" 
+
+write_data      equil.dat nocoeff
+run             1

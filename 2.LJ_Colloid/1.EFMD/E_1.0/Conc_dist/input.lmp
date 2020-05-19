@@ -1,0 +1,74 @@
+
+# step interval for outputs
+
+
+variable	myThermo equal 1000
+variable	myRestart equal 1000000
+variable        myImage equal 1000
+variable        myDumpV equal 10000
+variable        myDump equal 10000
+
+
+variable        myRun equal 10^6
+variable 	RColloid equal 3.23
+
+
+units		lj	
+atom_style	atomic
+boundary 	p p p
+
+read_data 	../0.Initialisation/equil.dat
+
+
+##########################################################
+#setting interaction parameter
+include 	../in.interaction
+##########################################################
+
+# set parameters of Varlet neighbor list
+neighbor        0.5 bin
+neigh_modify	every 1 delay 10 check yes
+
+##########################################################
+#setting geometry
+include  	in.geom
+##########################################################
+
+# set time step
+reset_timestep  0
+timestep	0.005
+run_style	verlet
+
+# set time steps of recording restart file
+#restart		${myRestart} ./particle/restart.*
+
+
+##############################################################
+# set display format for thermodynamic quantities
+thermo	        ${myThermo}
+thermo_modify	format float %25.15f lost warn
+
+##########################################################
+# Initialising the velocities of the system
+
+velocity        all set 0 0 0
+
+##########################################################
+#setting computation
+include 	in.conprof
+##########################################################
+
+fix             keepColloid gMon setforce 0 0 0 
+fix              3 gSol nvt temp 1.0 1.0 1.0
+
+
+##########################################################
+#Trajectory output
+##########################################################
+
+#dump da2 all custom ${myDump} ./conf/dumpfile*.gz id type x y z ix iy iz
+
+##########################################################
+
+
+run ${myRun} 

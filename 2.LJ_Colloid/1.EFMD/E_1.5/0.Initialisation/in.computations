@@ -1,0 +1,25 @@
+#General computes and variable desfinition
+###################################################
+#Counting Particles
+###################################################
+
+
+variable        bulk_volume equal 2*${lBulk}*${Ly}*${Lx}*${lattice_spacing}^3.0
+#counting the particles in the bulk
+variable        dcBSolu equal count(dgSolu,rBulk) 
+variable        dcBSolv equal count(dgSolv,rBulk)
+
+#Counting partilces in all the system 
+variable        dcSolu equal count(dgSolu) 
+variable        dcSolv equal count(dgSolv)
+
+
+#Concentrations in Bulk
+variable        nBSolu  equal v_dcBSolu/${bulk_volume} 
+variable	nBSolv  equal v_dcBSolv/${bulk_volume}
+variable 	nBSol	equal v_nBSolu+v_nBSolv
+variable        frac_bulk equal v_dcBSolu/v_dcBSolv
+
+
+
+

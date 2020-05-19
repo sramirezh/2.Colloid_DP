@@ -1,0 +1,140 @@
+
+variable        Lx equal 18 #In lattice units 
+variable 	Ly equal 12
+variable        Lz equal 18
+
+variable        nonzero equal 1.0e-8
+
+variable 	lambda equal 1
+variable 	myEquil equal 1e5
+variable 	myProd  equal 4e5
+variable 	myThermo equal 1e2
+variable 	myDump equal 1e4
+variable 	MCdisp equal 1
+variable 	mu1 index -1.7478856237659908 #Should give rho 0.60 for an ideal mixture at 0.75 total 
+variable 	mu2 index -3.1341799848858813 #Should give rho 0.15 for an ideal mixture at 0.75 total
+variable 	Temp equal 1.0 
+variable 	nMoveAtt equal 0
+variable 	nExcAtt equal 400
+variable        RColloid equal 3.23 
+
+variable 	t_rho_bulk equal 0.75 
+variable 	sol_frac equal 0.5 #solute fraction in the bulk
+
+timestep        0.05
+
+boundary 	p p p
+
+units 		lj
+atom_style      atomic
+neighbor        0.5 bin
+neigh_modify    every 1 delay 10 check yes
+
+
+lattice         fcc 0.8
+
+region          box block 0 ${Lx} 0 ${Ly} 0 ${Lz}
+create_box      3 box
+
+
+include 	in.geom
+include		in.interaction
+#include 	in.flux
+
+
+# Defining the colloid
+create_atoms    3 region rColloid
+group 		gMon type 3
+fix             keepColloid gMon setforce 0 0 0
+
+
+# Initialising the rest of the atoms to start faster
+#lattice        fcc ${t_rho_bulk}
+#create_atoms   1 region rCollcomp
+
+group gSolv type 1
+
+#set 	       group gSolv type/fraction 2 ${sol_frac} 12393
+
+group gSolu type 2
+
+group gSol union gSolu gSolv
+
+
+fix  		Solvres1 gSolv gcmc 1 ${nExcAtt} ${nMoveAtt} 1 123423 ${Temp} ${mu1} ${MCdisp} region rRes1 
+fix 		Solures1 gSolu gcmc 1 ${nExcAtt} ${nMoveAtt} 2 214223 ${Temp} ${mu2} ${MCdisp} region rRes1
+
+fix  		Solvres2 gSolv gcmc 1 ${nExcAtt} ${nMoveAtt} 1 123423 ${Temp} ${mu2} ${MCdisp} region rRes2 
+fix 		Solures2 gSolu gcmc 1 ${nExcAtt} ${nMoveAtt} 2 214223 ${Temp} ${mu1} ${MCdisp} region rRes2
+
+## Measuring the rates of acceptance for translation, insertion, deletion
+#
+#variable        taccSolv equal f_gcmcSolv[2]/(f_gcmcSolv[1]+${nonzero})
+#variable        iaccSolv equal f_gcmcSolv[4]/(f_gcmcSolv[3]+${nonzero})
+#variable        daccSolv equal f_gcmcSolv[6]/(f_gcmcSolv[5]+${nonzero})
+#
+#	
+#variable        taccSolu equal f_gcmcSolu[2]/(f_gcmcSolu[1]+${nonzero})
+#variable        iaccSolu equal f_gcmcSolu[4]/(f_gcmcSolu[3]+${nonzero})
+#variable        daccSolu equal f_gcmcSolu[6]/(f_gcmcSolu[5]+${nonzero})
+#
+variable	nSolv	equal count(gSolv)
+variable 	nSolu	equal count(gSolu)
+variable 	rhoSolv equal v_nSolv/vol
+variable 	rhoSolu equal v_nSolu/vol
+
+#Bulk region
+
+variable 	lattice_spacing equal 1.70998
+
+variable 	bulk_volume equal ${lattice_spacing}*2*((15-3)*12*3)
+
+variable 	rhoBSolu equal count(gSolu,rBulk)
+variable 	rhoBSolv equal count(gSolv,rBulk)
+variable 	rhoBSol equal v_rhoBSolu+v_rhoBSolv
+
+
+
+#Computing the excess chemical potential
+
+variable 	muex_Solv equal ${mu1}-${Temp}*ln(${rhoSolv}*${lambda}+${nonzero})
+variable 	muex_Solu equal ${mu2}-${Temp}*ln(${rhoSolu}*${lambda}+${nonzero})
+variable 	p equal press
+
+
+#Checking that the temperatures are right
+compute 	TSolv gSolv temp
+compute 	TSolu gSolu temp
+compute_modify  TSolv dynamic yes
+compute_modify 	TSolu dynamic yes
+
+#fix             cal1 all ave/time ${myThermo} 1 ${myThermo} v_rhoBSolu v_rhoBSolu v_rhoBSol file "./vdata_eq.dat"
+
+
+thermo          100
+
+thermo_style    custom step temp c_TSolv c_TSolu press v_nSolv v_nSolu density v_rhoSolv v_rhoSolu v_rhoBSol# v_taccSolv v_iaccSolv v_daccSolv v_taccSolu v_iaccSolu v_daccSolu
+
+compute_modify 	thermo_temp dynamic yes
+
+
+thermo_modify 	lost warn 
+
+fix             ensemble all nve
+
+dump            dump_all all custom 1000 all.atom id type x y z ix iy iz
+
+
+include 	in.computations
+
+run 		${myEquil}
+
+
+run 		${myProd}
+
+#Saving the last configurations
+
+print 		"Now I will save the configurations" 
+
+write_data      equil.dat nocoeff
+run             1

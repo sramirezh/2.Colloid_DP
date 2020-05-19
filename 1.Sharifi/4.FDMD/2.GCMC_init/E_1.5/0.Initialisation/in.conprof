@@ -1,0 +1,11 @@
+variable xo equal lx/2.0
+variable yo equal ly/2.0
+variable zo equal lz/2.0
+
+compute cc1 all chunk/atom bin/sphere ${xo} ${yo} ${zo} 0.0 10.0 200
+compute cc3 all chunk/atom bin/sphere ${xo} ${yo} ${zo} 0.0 20.0 200
+compute cc5 all chunk/atom bin/sphere ${xo} ${yo} ${zo} 0.0 20.0 200
+
+fix conc1 gSolu ave/chunk 10 100 1000 cc1 density/number file prof_u.dat ave running overwrite
+fix conc3 gSolv ave/chunk 10 100 1000 cc3 density/number file prof_v.dat ave running overwrite
+fix conc5 all ave/chunk 10 100 1000 cc5 density/number file prof_t.dat ave running overwrite

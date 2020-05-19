@@ -1,0 +1,13 @@
+#General computes and variable desfinition
+###################################################
+#Counting Particles
+###################################################
+
+
+# Some tests 
+variable 	dcBSol equal v_dcBSolu+v_dcBSolv #Number of solution particles in the bulk
+variable 	rho_bulk equal v_dcBSol/${bulk_volume}
+
+
+
+

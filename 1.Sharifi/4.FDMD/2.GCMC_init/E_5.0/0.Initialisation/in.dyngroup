@@ -1,0 +1,36 @@
+######################################################################################
+# Defining the dynamic groups
+compute         AtomType all property/atom type
+variable        Type2 atom "c_AtomType == 2"
+variable        Type1 atom "c_AtomType == 1"
+
+group           dgSolv dynamic all var Type1 every ${myUpdateDyn}
+group           dgSolu dynamic all var Type2 every ${myUpdateDyn}
+group           dgBSolv dynamic all var Type1 region rBulk every ${myUpdateDyn}
+group           dgBSolu dynamic all var Type2 region rBulk every ${myUpdateDyn}
+
+
+variable        bulk_volume equal 2*${lBulk}*${Ly}*${Lx}*${lattice_spacing}^3.0 #Reservoir volume 
+
+#counting the particles in the bulk
+variable        dcBSolu equal count(dgBSolu)
+variable        dcBSolv equal count(dgBSolv)
+
+#Counting partilces in all the system
+variable 	dcSolu equal count(dgSolu)
+
+
+
+#Concentrations
+variable        conc_bulk equal v_dcBSolu/${bulk_volume}
+variable        frac_bulk equal v_dcBSolu/v_dcBSolv
+
+
+#Conditions in the bulk
+
+variable        cond1 equal v_nTargetSolu>=v_conc_bulk
+variable        cond2 equal v_nTargetSolu<v_conc_bulk
+variable        frac equal (v_nTargetSolu-v_conc_bulk)*${bulk_volume}/v_dcBSolv*v_cond1
+variable        frac2 equal (v_conc_bulk-v_nTargetSolu)*${bulk_volume}/v_dcBSolu*v_cond2
+
+

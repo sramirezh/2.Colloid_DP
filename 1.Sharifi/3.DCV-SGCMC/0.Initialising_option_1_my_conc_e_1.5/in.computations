@@ -1,0 +1,35 @@
+#General computes and variable desfinition
+###################################################
+#Counting Particles
+###################################################
+
+variable        delta_z equal 0.2
+
+variable 	vxB_solv equal vcm(gSolv,x,rBulk)
+variable        vxB_solu equal vcm(gSolu,x,rBulk)
+variable 	vxB_sol equal vcm(all,x,rBulk)
+
+variable 	vx_solv equal vcm(gSolv,x)
+variable        vx_solu equal vcm(gSolu,x)
+variable        vx_sol equal vcm(all,x)
+
+## For the top region
+compute         cc1t all chunk/atom bin/1d z center ${delta_z} units box bound z 25 30
+compute         cc2t gSolv chunk/atom bin/1d x center ${delta_z} units box bound z 25 30
+#compute         cc3t gSolu chunk/atom bin/1d x center ${delta_x} units box bound z 25 30
+#
+fix             csol all ave/chunk 10 100 1000 cc1t density/mass temp vx fx ave running overwrite file properties_t.dat
+fix             csolvt gSolv ave/chunk 10 100 1000 cc2t density/mass temp vx fx ave running file Fproperties_t.dat
+#fix             cSolut gSolu ave/chunk 10 100 1000 cc3t density/mass temp vx fx ave running overwrite file Sproperties_t.dat
+#
+## For the bottom region 
+#
+compute         cc1b all chunk/atom bin/1d z center ${delta_z} units box bound z 0 5
+#compute         cc2b gSolv chunk/atom bin/1d x center ${delta_x} units box bound z 0 5 
+#compute         cc3b gSolu chunk/atom bin/1d x center ${delta_x} units box bound z 0 5
+#
+#
+fix             csolb all ave/chunk 10 100 1000 cc1b density/mass temp vx fx ave running overwrite file properties_b.dat
+#fix             csolvb gSolv ave/chunk 10 100 1000 cc2b density/mass temp vx fx ave running overwrite file Fproperties_b.dat
+#fix             cSolub gSolu ave/chunk 10 100 1000 cc3b density/mass temp vx fx ave running overwrite file Sproperties_b.dat
+#

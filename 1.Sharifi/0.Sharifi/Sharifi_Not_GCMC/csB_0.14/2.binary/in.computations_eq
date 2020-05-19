@@ -1,0 +1,29 @@
+#General computes and variable definition
+
+#####################################################
+#Variables to set the box
+####################################################
+
+variable lxbox equal lx
+variable lybox equal ly
+variable lzbox equal lz
+
+
+#####################################################
+#Basic calculations
+####################################################
+
+compute tempcal all temp # temperature for all the particles
+compute presscal all pressure tempcal ke
+compute petotal all pe # potential energy
+compute tempsol gSol temp # temperature recalculate for solution
+compute comPoly gMon com #center of mass of colloid
+
+variable nTargetSolu equal 0.14942182
+
+
+# Measuring the center of mass of the colloid
+variable        xc_col equal xcm(gMon,x) 
+variable        yc_col equal xcm(gMon,y)
+variable        zc_col equal xcm(gMon,z)
+

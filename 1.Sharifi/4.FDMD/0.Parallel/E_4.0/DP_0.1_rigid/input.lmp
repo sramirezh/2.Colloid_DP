@@ -1,0 +1,96 @@
+
+# step interval for outputs
+
+variable 	forc0 equal 0.1
+
+variable	myThermo equal 1000
+variable	myRestart equal 1000000
+variable        myImage equal 1000
+variable        myDump equal 1000
+
+
+variable        myStepsEach equal 10000
+variable        myLoop loop 1000
+
+
+units		lj	
+atom_style	atomic
+boundary 	p p p
+
+read_data 	../0.Initialisation/equil.dat
+
+##########################################################
+#setting interaction parameter
+include 	../in.interaction
+##########################################################
+
+# set parameters of Varlet neighbor list
+neighbor        0.5 bin
+neigh_modify	every 1 delay 10 check yes
+
+##########################################################
+#setting geometry
+include  	in.geom
+##########################################################
+
+# set time step
+reset_timestep  0
+timestep	0.005
+run_style	verlet
+
+# set time steps of recording restart file
+#restart		${myRestart} ./particle/restart.*
+
+
+##############################################################
+# set display format for thermodynamic quantities
+thermo	        ${myThermo}
+thermo_modify	format float %25.15f lost warn
+
+##########################################################
+
+
+
+include 	in.computations
+
+#Definition of the forces
+##########################################################
+
+fix 		adf0 gSolu addforce v_forc0 0.0 0.0
+fix		adf1 gSolv addforce v_forc1 0.0 0.0
+fix 		fp gMon addforce v_forcp 0.0 0.0
+fix             colloid  gMon rigid single
+##########################################################
+
+
+fix              3 gSol nvt temp 1.0 1.0 1.0
+
+##########################################################
+# set output
+thermo_style 	custom step  v_Fbulk v_Fsol v_forcp 
+
+fix 		pos all ave/time 1 1 100 c_comCol[1] c_comCol[2] c_comCol[3] file "./pos.dat"
+fix 		cal1 all ave/time 1 1000 1000  v_vxB_Sol v_vx_Sol v_vx_Col v_vx_relative v_conc_bulk v_frac_bulk v_Fsol v_forcp file "./vdata.dat"
+
+##########################################################
+#Trajectory output
+##########################################################
+dump		colloid gMon custom ${myDump} colloid.atom id type x y z ix iy iz
+
+##########################################################
+
+label loop 
+
+run 		${myStepsEach}
+
+variable zDis equal -(c_comCol[3]-${lhalf})
+
+displace_atoms all move 0 0 v_zDis units box 
+
+next myLoop
+
+jump SELF loop
+
+
+
+

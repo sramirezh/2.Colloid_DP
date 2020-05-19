@@ -1,0 +1,88 @@
+
+variable        Lx equal 30 #In lattice units 
+variable 	Ly equal 12
+variable        Lz equal 18
+
+variable 	myRun equal 1e7
+
+variable 	lambda equal 1
+variable 	myThermo equal 1e2
+variable 	myDump equal 1e4
+variable 	Temp equal 1.0 
+
+
+
+variable        RColloid equal 3.23 
+variable 	t_rho_bulk equal 0.75 
+variable 	sol_frac equal 0.5 #solute fraction in the bulk
+variable	frac equal 0.5
+
+variable        Loop equal 1e6
+variable        myloop loop ${Loop} 
+variable        myUpdateDyn equal 10 #THIS IS THE MOST IMPORTANT PARAMETER as atom/swap does not update
+variable        myStepsEach equal 20 #Every these steps there is a correction of the sources
+
+
+timestep        0.02
+
+boundary 	p p p
+
+units 		lj
+atom_style      atomic
+neighbor        0.5 bin
+neigh_modify    every 1 delay 10 check yes
+
+
+lattice         fcc 0.8
+read_data	../equil.dat 
+
+include 	in.geom
+include		in.interaction
+#include 	in.flux
+
+
+# Defining the colloid
+group 		gMon type 3
+
+fix             fx_Col gMon store/force
+
+group 		gSolv type 1
+group 		gSolu type 2
+group 		gSol union gSolu gSolv
+
+minimize        0.0 1.0e-8 1000 100000
+
+fix             ensemble all nvt temp 1.0 1.0 1.0 
+
+fix             keepColloid gMon setforce 0 0 0
+fix 		Htrans gSol setforce 0 NULL NULL 
+
+
+include 	in.computations
+
+
+# reducing the force
+compute         reduce_fx gMon reduce sum f_fx_Col[1]
+
+dump            dump_all all custom 10000 all.atom id type x y z ix iy iz vx 
+
+fix             cal1 all ave/time ${myThermo} 1 ${myThermo} v_rhoBSol c_reduce_fx file "./vdata_eq.dat"
+
+
+thermo          1000
+
+ 
+thermo_style    custom step temp density v_rhoBSol c_reduce_fx
+
+compute_modify 	thermo_temp dynamic yes
+
+
+
+run 		${myRun}
+
+#Saving the last configurations
+
+print 		"Now I will save the configurations" 
+
+write_data      equil.dat nocoeff
+run             1

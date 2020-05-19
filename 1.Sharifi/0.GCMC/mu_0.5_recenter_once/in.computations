@@ -1,0 +1,46 @@
+#General computes and variable definition
+
+#####################################################
+#Variables to set the box
+####################################################
+
+variable lxbox equal lx
+variable lybox equal ly
+variable lzbox equal lz
+
+
+#####################################################
+#Basic calculations
+####################################################
+
+compute tempcal all temp # temperature for all the particles
+compute presscal all pressure tempcal ke
+compute petotal all pe # potential energy
+compute tempsol gSol temp # temperature recalculate for solution
+compute comPoly gCol com #center of mass of polyper 
+
+
+
+###################################################
+#Counting Particles
+###################################################
+
+#All the volume
+
+variable cCol equal count(gCol)
+variable cSolu equal count(gSolu) 
+variable cSolv equal count(gSolv)
+
+
+###################################################
+# computing velocities
+###################################################
+variable        vx_Solv equal vcm(gSolv,x)
+variable        vx_Solu equal vcm(gSolu,x)
+variable        vx_Sol  equal vcm(gSol,x)
+
+
+# Computing the forces
+variable 	fSol equal (${cSolu}-${cSolv})*${force} # Force on the solution
+variable 	forcem equal -v_fSol/v_cCol #Force on each particle of the colloid
+

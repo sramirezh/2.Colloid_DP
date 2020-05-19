@@ -1,0 +1,87 @@
+
+# step interval for outputs
+
+variable 	forc0 equal 0.04
+
+variable	myThermo equal 1000
+variable	myRestart equal 1000000
+variable        myImage equal 1000
+variable        myDumpV equal 10000
+variable        myDump equal 10000
+
+
+variable        myRun equal 10^8
+
+units		lj	
+atom_style	atomic
+boundary p p p
+
+read_data ../../2.binary/final_conf.dat
+
+##########################################################
+#setting interaction parameter
+include ../in.interaction
+##########################################################
+
+# set parameters of Varlet neighbor list
+neighbor        0.5 bin
+neigh_modify	every 1 delay 10 check yes
+
+##########################################################
+#setting geometry
+include ../in.geom
+##########################################################
+
+# set time step
+reset_timestep  0
+timestep	0.005
+run_style	verlet
+
+# set time steps of recording restart file
+#restart		${myRestart} ./particle/restart.*
+
+
+##############################################################
+# set display format for thermodynamic quantities
+thermo	        ${myThermo}
+thermo_modify	format float %25.15f lost warn
+
+##########################################################
+
+#Definition of the forces
+##########################################################
+fix adf0 gSolu addforce v_forc0 0.0 0.0
+fix adf1 gSolv addforce v_forc1 0.0 0.0
+fix adfp gMon addforce v_forcp 0.0 0.0 
+##########################################################
+
+##########################################################
+#setting computation
+include ../in.computations
+include ../in.conprof
+include ../in.velprof
+##########################################################
+
+fix              3 gSol nvt temp 1.0 1.0 1.0
+
+##########################################################
+# set output
+#thermo_style custom step c_tempcal c_presscal v_Fbulk v_Fsol v_forcp v_Ftotal 
+fix pos all ave/time 1 1 100 c_comPoly[1] c_comPoly[2] c_comPoly[3] file "./pos.dat"
+fix cal1 all ave/time 1 1000 1000  v_vx_relative c_vx_poly c_vx_sol v_conc_bulk v_frac_bulk v_vx_sol_bulk file "./vdata.dat"
+
+##########################################################
+#Trajectory output
+##########################################################
+#shell mkdir conf
+#dump da2 all custom ${myDump} ./conf/dumpfile*.gz id type x y z ix iy iz vx vy vz
+dump poly gMon custom ${myDumpV} colloid.atom id type x y z ix iy iz
+
+##########################################################
+# Fixing the polymer in the middle
+
+fix             colloid  gMon rigid single reinit yes force 1 on off off
+
+#fix             keepColloid gMon setforce 0 0 0
+
+run ${myRun} 

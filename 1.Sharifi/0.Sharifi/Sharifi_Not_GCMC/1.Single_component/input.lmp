@@ -1,0 +1,84 @@
+#Test to evaluate the GCMC implementation
+# The input parameter is the chemical potential as -v mu VALUE
+# Type 1 is Solvent
+# Type 2 is Solute
+# Type 3 is colloid(obstacle)
+
+variable 	Lx equal 12 #in lattice units
+variable 	Lz equal 18 
+variable 	Temp equal 1.0 
+variable 	RColloid equal 3.23
+
+timestep        0.005
+
+boundary 	p p p
+
+units 		lj
+atom_style      atomic
+neighbor        0.5 bin
+neigh_modify    every 1 delay 10 check yes
+
+
+lattice 	fcc 0.8
+
+region          box block 0 ${Lx} 0 ${Lx} 0 ${Lz} 
+create_box      3 box
+
+create_atoms 	1 region box
+
+variable 	x0 equal lx/2
+variable 	z0 equal lz/2
+
+region 		rColloid sphere ${x0} ${x0} ${z0} ${RColloid} units box
+
+include	 	in.interaction
+ 
+# Creating the colloid
+group 		gMon region rColloid
+set 		group gMon type 3
+
+
+group		gSolv type 1
+
+
+dump            dump_all all custom 1000  traj.atom id type x y z ix iy iz
+
+thermo          100
+
+# To keep the colloid shape during minimization
+fix 		keepColloid gMon setforce 0 0 0 
+
+minimize 	1.0e-5 1.0e-6 1000 10000
+
+
+fix      	colloid  gMon rigid single reinit yes force 1 off off off
+
+# Measuring the center of mass of the colloid
+variable 	xc_col equal xcm(gMon,x)
+variable 	yc_col equal xcm(gMon,y)
+variable 	zc_col equal xcm(gMon,z)
+
+variable 	disp_x equal xc_col-x0
+variable 	disp_y equal yc_col-x0
+variable 	disp_z equal zc_col-z0
+
+
+#displace_atoms all style args keyword value
+
+
+#fix		centerColloid gMon recenter NULL NULL INIT shift all
+
+fix 		ensemble all nvt temp ${Temp} ${Temp} 0.1
+ 
+thermo_style custom step temp etotal v_xc_col v_yc_col v_zc_col
+
+run 		100000
+
+
+# release the colloid and set the velocity of all the particles to zero
+unfix           keepColloid
+velocity 	all set 0 0 0  
+
+write_data 	equil.dat nocoeff 
+run 		1000000
+

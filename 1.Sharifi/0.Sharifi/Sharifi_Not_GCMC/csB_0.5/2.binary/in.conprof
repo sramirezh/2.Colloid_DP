@@ -1,0 +1,7 @@
+variable xo equal lx/2.0
+variable yo equal ly/2.0
+variable zo equal lz/2.0
+
+compute cc5 all chunk/atom bin/sphere ${xo} ${yo} ${zo} 0.0 10.0 200
+
+fix conc5 gSol ave/chunk 10 100 1000 cc5 density/number file prof_t.dat ave running overwrite

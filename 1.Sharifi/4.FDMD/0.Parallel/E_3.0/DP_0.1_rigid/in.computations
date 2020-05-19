@@ -1,0 +1,58 @@
+#General computes and variable definition
+
+#####################################################
+#Variables to set the box
+####################################################
+
+variable lxbox equal lx
+variable lybox equal ly
+variable lzbox equal lz
+
+variable lhalf equal 0.5*lz
+
+#####################################################
+#Basic calculations
+####################################################
+
+compute tempcal all temp # temperature for all the particles
+compute presscal all pressure tempcal ke
+compute petotal all pe # potential energy
+compute tempsol gSol temp # temperature recalculate for solution
+
+
+
+#Counting Particles
+
+variable cSolu equal count(gSolu)
+variable cSolv equal count(gSolv)
+variable cMon equal count(gMon)
+#Bulk region
+
+variable cBSolu equal count(gSolu,rBulk)
+variable cBSolv equal count(gSolv,rBulk)
+variable cBSol equal count(gSol,rBulk) 
+
+#Velocities 
+variable vx_Col equal vcm(gMon,x)
+variable vx_Sol equal vcm(gSol,x)
+variable vxB_Sol equal vcm(gSol,x,rBulk)
+variable vx_relative equal v_vx_Col-v_vx_Sol
+
+#####################################################
+#Forces per species 
+#####################################################
+
+#Ratios 
+
+variable cRatio equal v_cBSolu/v_cBSolv 
+variable conc_bulk equal v_cBSolu/v_bulk_volume  #Solute concentration in the bulk
+variable frac_bulk equal v_cBSolu/v_cBSol 
+
+#Forces
+variable forc1 equal -v_forc0*v_cRatio
+variable Fsol equal ${cSolu}*v_forc0+${cSolv}*v_forc1 #Sum of foces over solution particles
+variable Fbulk equal v_cBSolu*v_forc0+v_cBSolv*v_forc1 #force balance in the bulk
+variable forcp equal -v_Fsol/${cMon}
+
+compute comCol gMon com
+

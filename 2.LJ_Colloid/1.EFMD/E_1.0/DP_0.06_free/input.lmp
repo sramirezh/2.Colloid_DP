@@ -1,0 +1,85 @@
+
+# step interval for outputs
+
+variable 	forc0 equal 0.06
+
+variable	myThermo equal 1e2
+variable        myDump equal 2e4
+variable        myRun equal 1e8
+
+
+variable 	RColloid equal 3.23 
+
+units		lj	
+atom_style	atomic
+boundary 	p p p
+
+read_data 	../0.Initialisation/equil.dat
+
+##########################################################
+#setting interaction parameter
+include 	../in.interaction
+##########################################################
+
+# set parameters of Varlet neighbor list
+neighbor        0.5 bin
+neigh_modify	every 1 delay 10 check yes
+
+##########################################################
+#setting geometry
+include  	in.geom
+##########################################################
+
+# set time step
+reset_timestep  0
+timestep	0.005
+run_style	verlet
+
+# set time steps of recording restart file
+#restart		${myRestart} ./particle/restart.*
+
+
+##############################################################
+# set display format for thermodynamic quantities
+thermo	        ${myThermo}
+thermo_modify	format float %25.15f lost warn
+
+##########################################################
+
+# Initialising the velocities of the solution 
+
+#velocity 	gSol set NULL NULL 0.0037
+
+
+#Definition of the forces
+##########################################################
+fix 		adf0 gSolu addforce v_forc0 0.0 0.0 region rnoBulk 
+fix		adf1 gSolv addforce v_forc1 0.0 0.0 region rnoBulk
+fix 		adfp gMon addforce v_forcp 0.0 0.0
+##########################################################
+
+##########################################################
+#setting computation
+include 	in.computations
+##########################################################
+
+fix              3 all nvt temp 1.0 1.0 1.0
+
+##########################################################
+# set output
+thermo_style 	custom step  v_Fbulk v_Fsol v_vxB_Solu v_vxB_Solv v_vxB_Sol 
+fix pos all ave/time 1 1 100 c_comCol[1] c_comCol[2] c_comCol[3] file "./pos.dat"
+
+fix 		cal1 all ave/time ${myThermo} 1 ${myThermo} v_vxB_Solu v_vxB_Solv  v_vxB_Sol v_vx_Sol  v_nBSolu v_nBSol v_frac_bulk v_Fsol v_forc1 v_vx_Col v_vx_relative file "./vdata.dat"
+
+##########################################################
+#Trajectory output
+##########################################################
+fix 		Colloid_recenter  gMon recenter NULL NULL 0.5  units fraction shift all
+
+dump            dump_all all custom ${myDump} all.atom id type x y z ix iy iz vx 
+
+##########################################################
+
+
+run ${myRun} 

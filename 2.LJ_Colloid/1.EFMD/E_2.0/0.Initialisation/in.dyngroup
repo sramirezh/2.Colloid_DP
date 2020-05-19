@@ -1,0 +1,10 @@
+######################################################################################
+# Defining the dynamic groups
+compute         AtomType all property/atom type
+variable        Type2 atom "c_AtomType == 2"
+variable        Type1 atom "c_AtomType == 1"
+
+group           dgSolv dynamic all var Type1 every ${myUpdateDyn}
+group           dgSolu dynamic all var Type2 every ${myUpdateDyn}
+
+

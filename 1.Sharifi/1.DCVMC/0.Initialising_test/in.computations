@@ -1,0 +1,22 @@
+#General computes and variable desfinition
+###################################################
+#Counting Particles
+###################################################
+
+variable        delta_x equal 0.2
+
+# For the top region
+compute         cc2t gSolv chunk/atom bin/1d x center ${delta_x} units box bound z 25 30
+compute         cc3t gSolu chunk/atom bin/1d x center ${delta_x} units box bound z 25 30
+
+fix             csolvt gSolv ave/chunk 10 100 1000 cc2t density/mass temp vx ave running overwrite file Fproperties_t.dat
+fix             cSolut gSolu ave/chunk 10 100 1000 cc3t density/mass temp vx ave running overwrite file Sproperties_t.dat
+
+# For the bottom region 
+
+compute         cc2b gSolv chunk/atom bin/1d x center ${delta_x} units box bound z 0 5 
+compute         cc3b gSolu chunk/atom bin/1d x center ${delta_x} units box bound z 0 5
+
+fix             csolvb gSolv ave/chunk 10 100 1000 cc2b density/mass temp vx ave running overwrite file Fproperties_b.dat
+fix             cSolub gSolu ave/chunk 10 100 1000 cc3b density/mass temp vx ave running overwrite file Sproperties_b.dat
+

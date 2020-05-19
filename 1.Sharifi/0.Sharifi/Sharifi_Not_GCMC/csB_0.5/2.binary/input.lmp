@@ -1,0 +1,152 @@
+# step interval for outputs
+variable	myThermo equal 1000
+variable        myDumpV equal 10000
+variable 	pLoop equal 200
+variable        myPLoop loop ${pLoop}
+variable 	myUpdateDyn equal 10 #THIS IS THE MOST IMPORTANT PARAMETER as atom/swap does not update
+variable 	my_MC_times equal 10 #Number of MC before replenishing
+variable 	myX_relax equal 10^4
+variable 	myStepsEach equal ${myUpdateDyn}*${my_MC_times} #Every these steps there is a replenish
+variable 	nTargetSolu equal 0.39
+
+#Equilibration steps
+variable 	myEq1 equal 10^5
+variable 	myEq2 equal 10^5
+#variable 	myFinal equal 6000000
+
+units		lj	
+atom_style	atomic
+boundary 	p p p
+
+read_data 	../../1.Single_component/equil.dat
+##########################################################
+#setting interaction parameter
+include 	in.interaction
+##########################################################
+
+
+# set parameters of Varlet neighbor lis
+neighbor        0.5 bin
+neigh_modify	every 1 delay 10 check yes
+
+##########################################################
+#setting geometry
+include 	in.geom
+
+
+#########################################################
+# Checking the potential
+
+pair_write 2 3 1000 r 0.2 3 table.dat LJ
+
+
+##########################################################
+# Fixing the Colloid
+fix             keepColloid gMon setforce 0 0 0
+
+#fix             colloid  gMon rigid single reinit yes force 1 off off off
+
+# set time step
+reset_timestep 	0
+timestep	0.005
+run_style	verlet
+
+##############################################################
+# set display format for thermodynamic quantities
+thermo	        ${myThermo}
+thermo_modify	format float %25.15f lost warn
+
+##########################################################
+#setting computation
+include 	in.computations_eq
+##########################################################
+
+
+fix             thermostat all nvt temp 1.0 1.0 1.0
+
+#####################################################
+#Defining the dynamic groups (dg)
+#and variables as the bulk volume
+#####################################################
+compute         AtomType all property/atom type
+variable        Type2 atom "c_AtomType == 2"
+variable        Type1 atom "c_AtomType == 1"
+
+group           dgSolu dynamic all var Type2 every ${myUpdateDyn}
+group 		dgSolv dynamic all var Type1 every ${myUpdateDyn}
+group	 	dgBSolv dynamic all var Type1 region rBulk every ${myUpdateDyn}
+group 		dgBSolu dynamic all var Type2 region rBulk every ${myUpdateDyn}
+
+variable 	dcBSolu equal count(dgSolu,rBulk)
+variable 	dcBSolv equal count(dgSolv,rBulk)
+variable 	dcSolu	equal count(dgSolu)
+
+# Be careful here
+variable 	dbulk_vol equal 2.*${lBulk}*lx*ly
+variable 	conc_bulk equal v_dcBSolu/v_dbulk_vol
+variable	frac_bulk equal v_dcBSolu/v_dcBSolv
+
+
+variable 	cond1 equal v_nTargetSolu>=v_conc_bulk
+variable 	cond2 equal v_nTargetSolu<v_conc_bulk 
+variable 	frac equal (v_nTargetSolu-v_conc_bulk)*v_dbulk_vol/v_dcBSolv*v_cond1
+variable 	frac2 equal (v_conc_bulk-v_nTargetSolu)*v_dbulk_vol/v_dcBSolu*v_cond2
+
+
+##########################################################
+# set output
+thermo_style 	custom step c_tempcal press v_dcSolu v_conc_bulk v_dcBSolu v_dcBSolv v_xc_col  
+fix 		cal1 all ave/time ${myThermo} 1 ${myThermo} v_dcBSolu v_dcBSolv v_conc_bulk  v_frac_bulk file "./vdata_eq.dat"
+
+##########################################################
+
+#Pre-Equilibration to let the particles go around the polymer
+
+
+include 	in.conprof
+set group 	gSolv type/fraction 2 0.2 2014
+run 		${myEq1}
+
+
+##########################################################
+#Fixing the bulk concentration
+##########################################################
+thermo ${myUpdateDyn}
+fix 		mc_relax all atom/swap ${myUpdateDyn} ${myX_relax}  13412 1.0 types 1 2
+run 		20
+
+
+
+dump dump_all all custom ${myUpdateDyn} all.atom id type x y z ix iy iz
+
+label equilibrating
+run             ${myStepsEach} 
+
+#changing solvents into solutes
+set group dgBSolv type/fraction 2 ${frac} 2014 
+#changing solutes into solvents
+set group dgBSolu type/fraction 1 ${frac2} 12899
+
+next myPLoop  
+
+jump SELF equilibrating
+
+
+
+##########################################################
+##Run for statistics
+###########################################################
+
+
+unfix 		mc_relax
+undump 		dump_all
+
+thermo		${myThermo}
+
+
+run 		${myEq2}
+
+
+#Writing the final configuration
+write_data final_conf.dat nocoeff
+run 0

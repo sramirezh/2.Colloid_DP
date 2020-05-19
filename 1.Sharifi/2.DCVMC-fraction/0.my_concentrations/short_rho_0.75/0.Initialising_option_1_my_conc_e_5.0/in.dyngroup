@@ -1,0 +1,45 @@
+######################################################################################
+# Defining the dynamic groups
+compute         AtomType all property/atom type
+variable        Type2 atom "c_AtomType == 2"
+variable        Type1 atom "c_AtomType == 1"
+
+group           dgSolvRes1 dynamic all var Type1 region rRes1 every ${myUpdateDyn}
+group           dgSoluRes1 dynamic all var Type2 region rRes1 every ${myUpdateDyn}
+group           dgSolvRes2 dynamic all var Type1 region rRes2 every ${myUpdateDyn}
+group           dgSoluRes2 dynamic all var Type2 region rRes2 every ${myUpdateDyn}
+
+variable        res_volume equal 3*${Ly}*${Lz}*${lattice_spacing}^3.0 #Reservoir volume
+
+#counting the particles in the reservoir
+variable        dcSolvRes1 equal count(dgSolvRes1)
+variable        dcSoluRes1 equal count(dgSoluRes1)
+variable        dcSolvRes2 equal count(dgSolvRes2)
+variable        dcSoluRes2 equal count(dgSoluRes2)
+
+#Concentrations
+variable        nSolvRes1 equal v_dcSolvRes1/${res_volume}
+variable        nSoluRes1 equal v_dcSoluRes1/${res_volume}
+variable        nSolvRes2 equal v_dcSolvRes2/${res_volume}
+variable        nSoluRes2 equal v_dcSoluRes2/${res_volume}
+
+#Conditions and fractions for the reservoirs
+
+
+#Res 1          (High solvent concentration)
+variable        cond1Res1 equal ${rho_high}>=v_nSolvRes1
+variable        cond2Res1 equal ${rho_high}<v_nSolvRes1
+
+# Fraction of solutes to convert into solvent 
+variable        frac1Res1 equal (${rho_high}-v_nSolvRes1)*${res_volume}/v_dcSoluRes1*v_cond1Res1
+# Fraction of solvents to convert into solutes
+variable        frac2Res1 equal -(${rho_high}-v_nSolvRes1)*${res_volume}/v_dcSolvRes1*v_cond2Res1
+
+
+#Res 2          (High solute concentration)
+variable        cond1Res2 equal ${rho_high}>=v_nSoluRes2
+variable        cond2Res2 equal ${rho_high}<v_nSoluRes2
+
+variable        frac1Res2 equal (${rho_high}-v_nSoluRes2)*${res_volume}/v_dcSolvRes2*v_cond1Res2
+variable        frac2Res2 equal -(${rho_high}-v_nSoluRes2)*${res_volume}/v_dcSoluRes2*v_cond2Res2
+

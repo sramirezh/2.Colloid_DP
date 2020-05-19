@@ -1,0 +1,40 @@
+#General computes and variable definition
+
+#####################################################
+#Variables to set the box
+####################################################
+
+variable lxbox equal lx
+variable lybox equal ly
+variable lzbox equal lz
+
+###################################################
+# computing velocities
+###################################################
+
+
+#Counting Particles
+
+variable cSolu equal count(gSolu)
+variable cSolv equal count(gSolv)
+variable cCol equal count(gMon)
+#Bulk region
+
+variable cBSolu equal count(gSolu,rBulk)
+variable cBSolv equal count(gSolv,rBulk)
+variable cBSol equal count(gSol,rBulk) 
+
+
+
+
+
+###################################################
+# MSD Calculations
+###################################################
+compute 	comMon gMon com #center of mass of the colloid
+
+compute         msd gMon msd com yes
+variable        twopoint equal c_msd[4]/6/(step*dt+1.0e-6)
+fix             9 all vector 10 c_msd[4]
+variable        fitslope equal slope(f_9)/6/(10*dt)
+

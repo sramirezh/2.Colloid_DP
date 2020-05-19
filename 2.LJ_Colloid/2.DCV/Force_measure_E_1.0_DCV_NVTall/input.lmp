@@ -1,0 +1,117 @@
+
+variable        Lx equal 30 #In lattice units 
+variable 	Ly equal 12
+variable        Lz equal 18
+
+variable        nonzero equal 1.0e-8
+
+variable 	myThermo equal 1e2
+variable 	myDump equal 1e4
+variable 	rho_high equal 0.60 
+variable 	rho_low  equal 0.15
+variable 	Temp equal 1.0 
+variable        RColloid equal 3.23 
+
+
+variable 	t_rho_bulk equal 0.72 
+variable 	sol_frac equal 0.5 #solute fraction in the bulk
+variable	frac equal ${rho_high}/${t_rho_bulk}
+
+variable        Loop equal 1e6
+variable        myloop loop ${Loop} 
+variable        myUpdateDyn equal 10 #THIS IS THE MOST IMPORTANT PARAMETER as atom/swap does not update
+variable        myStepsEach equal 20 #Every these steps there is a correction of the sources
+variable 	lattice_spacing equal 1.70998
+
+
+timestep        0.05
+
+boundary 	p p p
+
+units 		lj
+atom_style      atomic
+neighbor        0.5 bin
+neigh_modify    every 1 delay 10 check yes
+
+
+lattice         fcc 0.8
+read_data       ../E_1.0/equil.dat
+
+
+include 	in.geom
+include		in.interaction
+#include 	in.flux
+
+
+# Defining the groups
+group 		gMon type 3
+group           gSolv type 1
+group           gSolu type 2
+group           gSol union gSolu gSolv
+
+# Storing the forces
+fix             fx_Col gMon store/force
+
+
+fix             keepColloid gMon setforce 0 0 0
+
+
+fix             ensemble all nvt temp 1.0 1.0 1.0 
+
+dump            dump_all all custom 10000 all.atom id type x y z ix iy iz vx vy vz
+
+
+######################################################################################
+# Defining the dynamic groups
+include 	in.dyngroup
+
+######################################################################################
+
+include 	in.velprof
+include 	in.computations
+
+# reducing the force in x on the colloid
+compute         reduce_fx gMon reduce sum f_fx_Col[1] 
+
+fix             cal1 all ave/time ${myThermo} 1 ${myThermo} v_rhoBSol c_reduce_fx  v_vxB_solv v_vxB_solu v_vxB_sol v_vx_solv v_vx_solu v_vx_sol file "./vdata_eq.dat"
+
+
+thermo          1000
+
+ 
+thermo_style    custom step temp  density v_rhoBSol c_reduce_fx
+
+# SEMI GRAND CANONICAL
+
+label sgcm
+run ${myStepsEach}
+
+print "The frac1 is ${frac1Res1} ${frac2Res1}"
+
+# Res 1
+#changing solutes into solvents
+set group dgSoluRes1 type/fraction 1 ${frac1Res1} 2014
+#changing solvents into solutes
+set group dgSolvRes1 type/fraction 2 ${frac2Res1} 1233
+
+print "The frac2 is ${frac1Res2} ${frac2Res2}"
+# Res 2
+#changing solutes into solvents
+set group dgSolvRes2 type/fraction 2 ${frac1Res2} 2014
+#changing solvents into solutes
+set group dgSoluRes2 type/fraction 1 ${frac2Res2} 1233
+
+next myloop
+
+jump SELF sgcm
+
+
+
+
+
+#Saving the last configurations
+
+print 		"Now I will save the configurations" 
+
+write_data      equil.dat nocoeff
+run             1

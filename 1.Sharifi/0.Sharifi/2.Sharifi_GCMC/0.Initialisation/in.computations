@@ -1,0 +1,23 @@
+#General computes and variable desfinition
+
+#####################################################
+#Variables to set the box
+####################################################
+
+variable lxbox equal lx
+variable lybox equal ly
+variable lzbox equal lz
+
+
+###################################################
+#Counting Particles
+###################################################
+
+
+#Bulk region
+
+variable rhoBSolu equal count(gSolu,rBulk)/v_bulk_volume
+variable rhoBSolv equal count(gSolv,rBulk)/v_bulk_volume
+variable rhoBSol equal v_rhoBSolu+v_rhoBSolv 
+
+

@@ -1,0 +1,17 @@
+#General computes and variable desfinition
+###################################################
+#Counting Particles
+###################################################
+variable        bulk_volume equal 2*${lBulk}*${Ly}*${Lx}*${lattice_spacing}^3.0 #Reservoir volume
+
+
+#Counting particles
+variable 	cBSolu equal count(gSolu,rBulk)
+variable 	cBSolv equal count(gSolv,rBulk)
+variable 	cSolu equal count(gSolu)
+variable 	cSolv equal count(gSolv)
+
+#Particle density 
+variable 	nBSolu equal v_cBSolu/${bulk_volume}
+variable        nBSolv equal v_cBSolv/${bulk_volume}
+variable 	nBSol equal v_nBSolu+v_nBSolv

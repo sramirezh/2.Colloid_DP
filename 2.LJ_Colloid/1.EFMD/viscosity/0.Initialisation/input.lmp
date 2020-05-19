@@ -1,0 +1,93 @@
+
+# Geometry variables
+variable        Lx equal 12 #In lattice units 
+variable 	Ly equal 12
+variable        Lz equal 18
+
+
+# Run variables 
+variable	myTraj equal 1e2
+variable        myThermo equal 1e2
+variable 	myDump equal 1e4
+variable        myUpdateDyn equal 10 #THIS IS THE MOST IMPORTANT PARAMETER as atom/swap does not update
+variable        myX_relax equal 1e4
+
+variable        p equal 400     # correlation length
+variable        s equal 5       # sample interval
+variable        d equal $p*$s   # dump interval
+variable 	myStep equal 0.005
+
+
+variable        myEquil equal 1e2
+variable 	myProd equal 1e7
+
+
+
+# Systemp Parameters
+variable 	RColloid equal 3.23
+variable 	T equal 1.0 
+variable 	t_rho_bulk equal 0.72 
+variable 	sol_frac equal 0.5 #solute fraction in the bulk
+variable        nonzero equal 1.0e-8
+variable 	lattice_spacing equal 1.70998
+
+timestep        ${myStep}
+
+boundary 	p p p
+
+units 		lj
+atom_style      atomic
+neighbor        0.5 bin
+neigh_modify    every 1 delay 10 check yes
+
+
+lattice         fcc 0.8
+
+region          box block 0 ${Lx} 0 ${Ly} 0 ${Lz}
+create_box      3 box
+
+
+
+
+include 	in.geom
+include		../in.interaction
+#include 	in.flux
+
+lattice        fcc ${t_rho_bulk}
+create_atoms   1 region box
+
+group 		gSolv type 1
+
+set 	       	group gSolv type/fraction 2 ${sol_frac} 12393
+
+group 		gSolu type 2
+
+group 		gSol union gSolu gSolv
+
+minimize 	0.0 1.0e-8 1000 100000
+
+
+fix             Ensemble all nvt temp $T $T 0.1
+
+
+
+run 		${myEquil}
+reset_timestep 	0
+
+include 	in.computations
+
+
+thermo          ${d}
+thermo_style  	custom step temp press density atoms v_pxy v_pxz v_pyz v_v11 v_v22 v_v33
+
+
+run		${myProd}
+
+
+#Saving the last configurations
+
+
+write_data      equil.dat nocoeff
+
+print       "average viscosity: $v @ $T , ${nSol}"
+print 		"Now I will save the configurations" 
